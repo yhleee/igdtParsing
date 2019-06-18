@@ -9,9 +9,9 @@ public class DBConnection {
     String user_name = "tabletAdmin";
     String port = "3306";
     String password = "1q2w3e4r%T";
-    String url = "jdbc:mysql://" + server + ":"+port+"/" + database + "?serverTimezone=UTC";
+    String url = "jdbc:mysql://" + server + ":" + port + "/" + database + "?serverTimezone=UTC";
 
-    public DBConnection () throws SQLException{
+    public DBConnection() throws SQLException {
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -30,7 +30,7 @@ public class DBConnection {
 
         try {
 
-            con = DriverManager.getConnection(url,user_name,password);
+            con = DriverManager.getConnection(url, user_name, password);
             st = con.createStatement();
 
             String sql;
@@ -38,7 +38,7 @@ public class DBConnection {
 
             ResultSet rs = st.executeQuery(sql);
 
-            while(rs.next()){
+            while (rs.next()) {
                 Ingredient igdt = new Ingredient();
                 igdt.setId(rs.getString("igdt_cd"));
                 igdt.setName(rs.getString("igdt_nm"));
@@ -53,7 +53,7 @@ public class DBConnection {
             st.close();
 
 
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             System.err.println("DB Connection Error:" + e.getMessage());
             e.printStackTrace();
         } finally {
@@ -72,15 +72,16 @@ public class DBConnection {
 
         try {
 
-            con = DriverManager.getConnection(url,user_name,password);
+            con = DriverManager.getConnection(url, user_name, password);
             st = con.createStatement();
 
             String sql;
-            sql = "SELECT * from oliveone_gds_detail";
+            //sql = "SELECT * from oliveone_gds_detail";
+            sql = "SELECT * from oliveone_gds_detail_last";
 
             ResultSet rs = st.executeQuery(sql);
 
-            while(rs.next()){
+            while (rs.next()) {
                 Goods gds = new Goods();
                 gds.setId(rs.getString("gds_cd"));
                 gds.setName(rs.getString("gds_nm"));
@@ -92,14 +93,14 @@ public class DBConnection {
             rs.close();
             st.close();
 
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             System.err.println("DB Connection Error:" + e.getMessage());
             e.printStackTrace();
         } finally {
             con.close();
+
             return gdsArr;
         }
-
 
 
 
@@ -109,19 +110,19 @@ public class DBConnection {
         Connection con = null;
         Statement st = null;
         PreparedStatement pstmt = null;
-        int r=0;
+        int r = 0;
 
 
         try {
 
-            con = DriverManager.getConnection(url,user_name,password);
-           ;
+            con = DriverManager.getConnection(url, user_name, password);
+            ;
 
             String sql = "INSERT INTO oliveone_gds_ingredient (gds_cd, igdt_cd) values (?,?)";
 
 
 
-            for(String[] strArr : matchedList){ //gds_cd : igdt_cd
+            for (String[] strArr : matchedList) { //gds_cd : igdt_cd
 
                 pstmt = con.prepareStatement(sql);
 
@@ -130,21 +131,64 @@ public class DBConnection {
                 pstmt.setString(1, strArr[0]);
                 pstmt.setString(2, strArr[1]);
 
-                 r+= pstmt.executeUpdate();
+                r += pstmt.executeUpdate();
 
 
             }
 
 
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             System.err.println("DB Connection Error:" + e.getMessage());
             e.printStackTrace();
         } finally {
             con.close();
+            pstmt.close();
             return r;
 
         }
 
+
+
+    }
+
+
+    public void updateProduct(int igdt_cnt, int result_cnt, String gds_cd) throws SQLException {
+        Connection con = null;
+        Statement st = null;
+        PreparedStatement pstmt = null;
+
+
+
+        try {
+
+            con = DriverManager.getConnection(url, user_name, password);
+            ;
+
+            String sql = "UPDATE oliveone_gds_detail_last SET igdt_cnt = ?, result_cnt = ? WHERE gds_cd = ?";
+
+
+
+            pstmt = con.prepareStatement(sql);
+
+
+
+            pstmt.setString(1, igdt_cnt+"");
+            pstmt.setString(2, result_cnt+"");
+            pstmt.setString(3, gds_cd);
+
+            pstmt.executeUpdate();
+
+
+
+        } catch (SQLException e) {
+            System.err.println("DB Connection Error:" + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            con.close();
+            pstmt.close();
+
+
+        }
 
 
 
