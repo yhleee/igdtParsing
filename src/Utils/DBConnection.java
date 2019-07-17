@@ -1,6 +1,10 @@
+package Utils;
+
+import Model.Goods;
+import Model.Ingredient;
+
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class DBConnection {
 

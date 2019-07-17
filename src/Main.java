@@ -1,7 +1,11 @@
+import Model.Goods;
+import Model.Ingredient;
+import Utils.DBConnection;
+import Utils.ExcelExport;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.StringTokenizer;
 
 public class Main {
@@ -13,10 +17,10 @@ public class Main {
         //DB Connection
         DBConnection con = new DBConnection();
 
-        //Get Data from Master Ingredient Table
+        //Get Data from Master Model.Ingredient Table
         ArrayList<Ingredient> igdtArr = con.igdtSelect();
 
-        //Get Data from Goods Table
+        //Get Data from Model.Goods Table
         ArrayList<Goods> gdsArr = con.gdsSelect();
 
        for (int index = 0; index < gdsArr.size(); index++) {
@@ -104,7 +108,7 @@ public class Main {
 
         }
 
-        //db insert
+        //db insert (생략)
        // int result = con.insertMatchKeyword(matchedList);
 
 
@@ -118,7 +122,7 @@ public class Main {
 
 
 //        //matched list print - download by excel (생략)
-//        ExcelExport ex2 = new ExcelExport();
+//        Utils.ExcelExport ex2 = new Utils.ExcelExport();
 //        try {
 //            ex2.excelExport_matched(matchedList);
 //        } catch (IOException e) {
