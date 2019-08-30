@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class DBConnection {
 
-    String server = "116.121.31.99";
+    String server = "git.oliveyoung.co.kr";
     String database = "tablet_app";
     String user_name = "tabletAdmin";
     String port = "3306";
@@ -110,6 +110,46 @@ public class DBConnection {
 
     }
 
+    public int insertMatchKeywordItem(String[] item) throws SQLException {
+        Connection con = null;
+        Statement st = null;
+        PreparedStatement pstmt = null;
+        int r = 0;
+
+
+        try {
+
+            con = DriverManager.getConnection(url, user_name, password);
+
+
+            String sql = "INSERT INTO oliveone_gds_ingredient (gds_cd, igdt_cd) values (?,?)";
+
+            String[] strArr = item;
+
+                pstmt = con.prepareStatement(sql);
+
+
+
+                pstmt.setString(1, strArr[0]);
+                pstmt.setString(2, strArr[1]);
+
+                r += pstmt.executeUpdate();
+
+
+        } catch (SQLException e) {
+            System.err.println("DB Connection Error:" + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            con.close();
+            pstmt.close();
+            return r;
+
+        }
+
+
+
+    }
+
     public int insertMatchKeyword(ArrayList<String[]> matchedList) throws SQLException {
         Connection con = null;
         Statement st = null;
@@ -168,7 +208,7 @@ public class DBConnection {
             con = DriverManager.getConnection(url, user_name, password);
             ;
 
-            String sql = "UPDATE oliveone_gds_detail_last SET igdt_cnt = ?, result_cnt = ? WHERE gds_cd = ?";
+            String sql = "UPDATE oliveone_gds_detail_last SET igdt_cnt_last = ?, result_cnt_last = ? WHERE gds_cd = ?";
 
 
 

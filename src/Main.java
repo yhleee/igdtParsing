@@ -7,10 +7,12 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
+import  java.util.*;
 
 public class Main {
 
     public static void main(String[] args) throws SQLException {
+        String input_nm;
         ArrayList<String[]> matchedList = new ArrayList<String[]>();
         ArrayList<String[]> unmatchedList = new ArrayList<String[]>();
 
@@ -23,8 +25,7 @@ public class Main {
         //Get Data from Model.Goods Table
         ArrayList<Goods> gdsArr = con.gdsSelect();
 
-       for (int index = 0; index < gdsArr.size(); index++) {
-        //for (int index = 0; index < 100; index++) {
+        for (int index = 0; index < gdsArr.size(); index++) {
 
             String detail = gdsArr.get(index).getDetail();
 
@@ -33,27 +34,32 @@ public class Main {
 
 
             StringTokenizer st = new StringTokenizer(detail, ",");
+
+
             while (st.hasMoreTokens()) {
                 String tk = st.nextToken();
                 //키워드 앞에 space 가 있을경우 삭제처리
                 tk = tk.trim();
 
                 //1,2 헥산디올 예외처리
-                if (tk.equals("1") ) {
-                    if(st.hasMoreTokens()){
-                    String tk_next = st.nextToken();
-                    if (tk_next.equals("2-헥산디올")) {
-                        String[] strArr = {gdsArr.get(index).getId(), "005355", gdsArr.get(index).getName(),
-                            "1,2-헥산디올", "1,2-Hexanediol"};
-                        matchedList.add(strArr);
+                if (tk.equals("1")) {
+                    if (st.hasMoreTokens()) {
+                        String tk_next = st.nextToken();
+                        if (tk_next.equals("2-헥산디올")) {
+                            String[] strArr =
+                                {gdsArr.get(index).getId(), "005355", gdsArr.get(index).getName(),
+                                    "1,2-헥산디올", "1,2-Hexanediol"};
+                            matchedList.add(strArr);
+                            //con.insertMatchKeywordItem(strArr);
 
-                        igdt_cnt++;
-                        result_cnt++;
 
+                            igdt_cnt++;
+                            result_cnt++;
+
+                        }
                     }
-                    }
 
-                }else {    //예외처리 제외한 keyword - 모든 전성분에 대하여 matching되는 키워드 검색
+                } else {    //예외처리 제외한 keyword - 모든 전성분에 대하여 matching되는 키워드 검색
 
                     boolean ifmatch = false;
 
@@ -62,34 +68,37 @@ public class Main {
 
                         //found matching ingredient
                         if (tk.equals(igdtArr.get(j).getName())) {
-                            String[] strArr = {gdsArr.get(index).getId(), igdtArr.get(j).getId(),
+                            String[] strArr_1 = {gdsArr.get(index).getId(), igdtArr.get(j).getId(),
                                 gdsArr.get(index).getName(), igdtArr.get(j).getName(),
                                 igdtArr.get(j).getEn_name()};
-                            matchedList.add(strArr);
+                            matchedList.add(strArr_1);
+                           // con.insertMatchKeywordItem(strArr_1);
+                            //success table update - 전성분 && 아이템 매치
 
                             igdt_cnt++;
                             result_cnt++;
+                            ifmatch = true;
+                            break;
 
-                        ifmatch = true;
-                        break;
-
-                    }else if (tk.equals(igdtArr.get(j).getAsis_name())){
-                            String[] strArr = {gdsArr.get(index).getId(), igdtArr.get(j).getId(),
+                        } else if (tk.equals(igdtArr.get(j).getAsis_name())) {
+                            String[] strArr_2 = {gdsArr.get(index).getId(), igdtArr.get(j).getId(),
                                 gdsArr.get(index).getName(), igdtArr.get(j).getName(),
                                 igdtArr.get(j).getEn_name()};
-                            matchedList.add(strArr);
+                            matchedList.add(strArr_2);
+
+                            //success table update - 전성분 && 아이템 매치
+                            //con.insertMatchKeywordItem(strArr_2);
 
                             igdt_cnt++;
                             result_cnt++;
-
                             ifmatch = true;
                             break;
                         }
 
-                }
+                    }
 
                     //no matched ingredient
-                if (!ifmatch) {
+                    if (!ifmatch) {
 
                         String[] strArr =
                             {gdsArr.get(index).getId(), gdsArr.get(index).getName(), tk};
@@ -101,27 +110,28 @@ public class Main {
 
             }
 
-            //goods 의 전성분 성공 / 실패 갯수 count 한 후 goods 에 업데이트 하기.
-            con.updateProduct(igdt_cnt, result_cnt,gdsArr.get(index).getId());
 
-            System.out.println("completed :" + index +" |||   total : " + gdsArr.size());
+
+            //goods 의 전성분 성공 / 실패 갯수 count 한 후 goods 에 업데이트 하기.
+           // con.updateProduct(igdt_cnt, result_cnt, gdsArr.get(index).getId());
+
+            System.out.println("completed :" + index + " |||   total : " + gdsArr.size());
 
         }
+        con.insertMatchKeyword(matchedList);
 
-        //db insert (생략)
-       // int result = con.insertMatchKeyword(matchedList);
 
 
         //unmatched list print - download by excel
-        ExcelExport ex = new ExcelExport();
-        try {
-            ex.excelExport_unmatched(unmatchedList);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        ExcelExport ex = new ExcelExport();
+//        try {
+//            ex.excelExport_unmatched(unmatchedList);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
-//        //matched list print - download by excel (생략)
+        //matched list print - download by excel (생략)
 //        Utils.ExcelExport ex2 = new Utils.ExcelExport();
 //        try {
 //            ex2.excelExport_matched(matchedList);
