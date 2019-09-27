@@ -5,6 +5,16 @@ public class Goods {
     private String name;
     private String detail;
 
+    public Goods(String id, String name, String detail) {
+        this.id = id;
+        this.name = name;
+        this.detail = detail;
+    }
+
+    public Goods() {
+
+    }
+
     public String getId() {
         return id;
     }

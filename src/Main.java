@@ -1,146 +1,97 @@
 import Model.Goods;
 import Model.Ingredient;
+import Model.Keyword;
+import Utils.CSVReader;
 import Utils.DBConnection;
 import Utils.ExcelExport;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
-import  java.util.*;
+import java.util.*;
 
 public class Main {
+    public static ArrayList<String[]> matchedList = new ArrayList<String[]>();
+    public static ArrayList<String[]> unmatchedList = new ArrayList<String[]>();
 
     public static void main(String[] args) throws SQLException {
-        String input_nm;
-        ArrayList<String[]> matchedList = new ArrayList<String[]>();
-        ArrayList<String[]> unmatchedList = new ArrayList<String[]>();
 
         //DB Connection
         DBConnection con = new DBConnection();
+        System.out.println("please select the action");
+        System.out.println("0. 1차 분류 - 상품 master detail 분류 ");
+        System.out.println("1. 2차분류 - 미매칭 키워드 기준 수작업 성공 리스트 반영");
+        System.out.println("2. 2차분류 - 전성분 재처리 - ',' 처리 후 성공 리스트 업데이트");
 
+        Scanner scan = new Scanner(System.in);
+        String str = scan.nextLine();
         //Get Data from Master Model.Ingredient Table
         ArrayList<Ingredient> igdtArr = con.igdtSelect();
-
-        //Get Data from Model.Goods Table
         ArrayList<Goods> gdsArr = con.gdsSelect();
-
-        for (int index = 0; index < gdsArr.size(); index++) {
-
-            String detail = gdsArr.get(index).getDetail();
-
-            int igdt_cnt = 0;
-            int result_cnt = 0;
+        CSVReader csvReader = new CSVReader();
 
 
-            StringTokenizer st = new StringTokenizer(detail, ",");
+        if (str.equals("0")) {
+            ArrayList<String[]> matchedList = new ArrayList<String[]>();
+            ArrayList<String[]> unmatchedList = new ArrayList<String[]>();
 
+            MatchHandler.parsing(igdtArr, gdsArr);
 
-            while (st.hasMoreTokens()) {
-                String tk = st.nextToken();
-                //키워드 앞에 space 가 있을경우 삭제처리
-                tk = tk.trim();
+            //분류 후 DB 입력
+            con.insertMatchKeyword(matchedList);
+            con.insertUnmatched(unmatchedList);
 
-                //1,2 헥산디올 예외처리
-                if (tk.equals("1")) {
-                    if (st.hasMoreTokens()) {
-                        String tk_next = st.nextToken();
-                        if (tk_next.equals("2-헥산디올")) {
-                            String[] strArr =
-                                {gdsArr.get(index).getId(), "005355", gdsArr.get(index).getName(),
-                                    "1,2-헥산디올", "1,2-Hexanediol"};
-                            matchedList.add(strArr);
-                            //con.insertMatchKeywordItem(strArr);
-
-
-                            igdt_cnt++;
-                            result_cnt++;
-
-                        }
-                    }
-
-                } else {    //예외처리 제외한 keyword - 모든 전성분에 대하여 matching되는 키워드 검색
-
-                    boolean ifmatch = false;
-
-                    for (int j = 0; j < igdtArr.size(); j++) {
-
-
-                        //found matching ingredient
-                        if (tk.equals(igdtArr.get(j).getName())) {
-                            String[] strArr_1 = {gdsArr.get(index).getId(), igdtArr.get(j).getId(),
-                                gdsArr.get(index).getName(), igdtArr.get(j).getName(),
-                                igdtArr.get(j).getEn_name()};
-                            matchedList.add(strArr_1);
-                           // con.insertMatchKeywordItem(strArr_1);
-                            //success table update - 전성분 && 아이템 매치
-
-                            igdt_cnt++;
-                            result_cnt++;
-                            ifmatch = true;
-                            break;
-
-                        } else if (tk.equals(igdtArr.get(j).getAsis_name())) {
-                            String[] strArr_2 = {gdsArr.get(index).getId(), igdtArr.get(j).getId(),
-                                gdsArr.get(index).getName(), igdtArr.get(j).getName(),
-                                igdtArr.get(j).getEn_name()};
-                            matchedList.add(strArr_2);
-
-                            //success table update - 전성분 && 아이템 매치
-                            //con.insertMatchKeywordItem(strArr_2);
-
-                            igdt_cnt++;
-                            result_cnt++;
-                            ifmatch = true;
-                            break;
-                        }
-
-                    }
-
-                    //no matched ingredient
-                    if (!ifmatch) {
-
-                        String[] strArr =
-                            {gdsArr.get(index).getId(), gdsArr.get(index).getName(), tk};
-                        unmatchedList.add(strArr);
-
-                        igdt_cnt++;
-                    }
-                }
-
+            //처리결과 다운로드
+            ExcelExport ex = new ExcelExport();
+            try {
+                ex.excelExport_matched(matchedList);
+                ex.excelExport_unmatched(unmatchedList);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
 
+        } else if (str.equals("1")) {//수작업 완료 리스트 반영 (미매칭 전성분 -> 매칭리스트 반영)
 
-            //goods 의 전성분 성공 / 실패 갯수 count 한 후 goods 에 업데이트 하기.
-           // con.updateProduct(igdt_cnt, result_cnt, gdsArr.get(index).getId());
+            //수작업 완료 리스트는 테이블에 저장됨
 
-            System.out.println("completed :" + index + " |||   total : " + gdsArr.size());
+            //select query
+            ArrayList<String[]> resultArray = con.selectFailedKeywords();
+
+            //insert to matched List
+            con.insertMatchKeyword(resultArray);
+
+        } else if (str.equals("2")) {//, 구분자로 된 키워드 재처리 (9월 24일)
+            int gdsArrSize = 0;
+            ArrayList<Keyword> keywordArr = con.keywordSelect();
+            ArrayList<Goods> goodsArr = new ArrayList<>();
+
+            for (int i = 0; i < keywordArr.size(); i++) {
+                Goods gds = new Goods(keywordArr.get(i).getGds_cd(), keywordArr.get(i).getGds_nm(),
+                    keywordArr.get(i).getKeyword_nm());
+                goodsArr.add(gdsArrSize, gds);
+                gdsArrSize++;
+            }
+
+            //미매칭 전성분 대상 다시 분류
+            MatchHandler.parsing(igdtArr, goodsArr);
+
+            //미매칭 2차 분류 후 다시 생긴 미매칭 건 추가하기
+            con.insertUnmatched(unmatchedList);
+
+            //재처리결과 엑셀 다운로드
+            ExcelExport ex = new ExcelExport();
+            try {
+                ex.excelExport_matched(matchedList);
+                ex.excelExport_unmatched(unmatchedList);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
 
         }
-        con.insertMatchKeyword(matchedList);
-
-
-
-        //unmatched list print - download by excel
-//        ExcelExport ex = new ExcelExport();
-//        try {
-//            ex.excelExport_unmatched(unmatchedList);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-
-        //matched list print - download by excel (생략)
-//        Utils.ExcelExport ex2 = new Utils.ExcelExport();
-//        try {
-//            ex2.excelExport_matched(matchedList);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-
 
     }
+
 
 }
