@@ -30,7 +30,7 @@ public class Main {
         ArrayList<Goods> gdsArr = con.gdsSelect();
         CSVReader csvReader = new CSVReader();
 
-
+        //상품 Master detail 전성분 1차 분류
         if (str.equals("0")) {
             ArrayList<String[]> matchedList = new ArrayList<String[]>();
             ArrayList<String[]> unmatchedList = new ArrayList<String[]>();
@@ -39,6 +39,8 @@ public class Main {
 
             //분류 후 DB 입력
             con.insertMatchKeyword(matchedList);
+
+            //미매칭 전성분 저장
             con.insertUnmatched(unmatchedList);
 
             //처리결과 다운로드
